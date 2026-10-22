@@ -7,8 +7,13 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "driver/gpio.h"
 #include "driver/uart.h"
 #include "esp_err.h"
+
+#define SERVO_UART    UART_NUM_2
+#define SERVO_TX_GPIO GPIO_NUM_17 // -> BusLinker RX
+#define SERVO_RX_GPIO GPIO_NUM_16 // <- BusLinker TX
 
 #define SERVO_BROADCAST_ID 0xFE // all servos obey; only ID read replies, and only with ONE servo on the bus
 
@@ -31,6 +36,8 @@ esp_err_t servo_set_torque(uint8_t id, bool on);
 // Note: the servo saves this setting to its non-volatile memory on every write
 esp_err_t servo_set_led(uint8_t id, bool on);
 
+// Saved across power-off. Every servo currently at id takes new_id, so connect only one.
+esp_err_t servo_write_id(uint8_t id, uint8_t new_id);
 esp_err_t servo_read_id(uint8_t id, uint8_t *out);
 esp_err_t servo_read_pos(uint8_t id, int16_t *pos);
 esp_err_t servo_read_vin(uint8_t id, uint16_t *mv);

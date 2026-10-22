@@ -9,6 +9,7 @@
 // Command values (Hiwonder Bus Servo Communication Protocol, section 4)
 #define CMD_MOVE_TIME_WRITE      1
 #define CMD_MOVE_STOP            12
+#define CMD_ID_WRITE             13
 #define CMD_ID_READ              14
 #define CMD_VIN_LIMIT_WRITE      22
 #define CMD_VIN_LIMIT_READ       23
@@ -136,6 +137,12 @@ esp_err_t servo_set_led(uint8_t id, bool on)
 {
     uint8_t p[1] = {on ? 0 : 1}; // protocol: 0 = LED on, 1 = LED off
     return send(id, CMD_LED_CTRL_WRITE, p, sizeof(p));
+}
+
+esp_err_t servo_write_id(uint8_t id, uint8_t new_id)
+{
+    uint8_t p[1] = {new_id};
+    return send(id, CMD_ID_WRITE, p, sizeof(p));
 }
 
 esp_err_t servo_read_id(uint8_t id, uint8_t *out)
