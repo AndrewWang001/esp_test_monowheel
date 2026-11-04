@@ -11,6 +11,8 @@
 #define CMD_MOVE_STOP            12
 #define CMD_ID_WRITE             13
 #define CMD_ID_READ              14
+#define CMD_ANGLE_LIMIT_WRITE    20
+#define CMD_ANGLE_LIMIT_READ     21
 #define CMD_VIN_LIMIT_WRITE      22
 #define CMD_VIN_LIMIT_READ       23
 #define CMD_TEMP_READ            26
@@ -186,4 +188,23 @@ esp_err_t servo_write_vin_limit(uint8_t id, uint16_t min_mv, uint16_t max_mv)
 {
     uint8_t p[4] = {min_mv & 0xFF, min_mv >> 8, max_mv & 0xFF, max_mv >> 8};
     return send(id, CMD_VIN_LIMIT_WRITE, p, sizeof(p));
+}
+
+esp_err_t servo_read_angle_limit(uint8_t id, uint16_t *min_pos, uint16_t *max_pos)
+{
+    uint8_t d[4];
+    esp_err_t err = request(id, CMD_ANGLE_LIMIT_READ, d, 4);
+    if (err == ESP_OK) {
+        *min_pos = d[0] | (d[1] << 8);
+        *max_pos = d[2] | (d[3] << 8);
+    }
+    return err;
+}
+
+esp_err_t servo_write_angle_limit(uint8_t id, uint16_t min_pos, uint16_t max_pos)
+{
+    if (max_pos > SERVO_POS_MAX) max_pos = SERVO_POS_MAX;
+    if (min_pos >= max_pos) return ESP_ERR_INVALID_ARG;
+    uint8_t p[4] = {min_pos & 0xFF, min_pos >> 8, max_pos & 0xFF, max_pos >> 8};
+    return send(id, CMD_ANGLE_LIMIT_WRITE, p, sizeof(p));
 }

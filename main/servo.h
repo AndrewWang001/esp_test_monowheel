@@ -44,3 +44,7 @@ esp_err_t servo_read_vin(uint8_t id, uint16_t *mv);
 esp_err_t servo_read_temp(uint8_t id, uint8_t *deg_c);
 esp_err_t servo_read_vin_limit(uint8_t id, uint16_t *min_mv, uint16_t *max_mv);
 esp_err_t servo_write_vin_limit(uint8_t id, uint16_t min_mv, uint16_t max_mv);
+
+// Saved across power-off. In position mode the servo won't go outside [min_pos, max_pos].
+esp_err_t servo_read_angle_limit(uint8_t id, uint16_t *min_pos, uint16_t *max_pos);
+esp_err_t servo_write_angle_limit(uint8_t id, uint16_t min_pos, uint16_t max_pos);
