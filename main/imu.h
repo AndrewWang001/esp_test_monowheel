@@ -1,16 +1,20 @@
 #pragma once
 
-// MPU-6050 attitude estimator running in its own FreeRTOS task at 100 Hz.
-// Other tasks read the latest result with imu_get_state().
+// BNO085 IMU over I2C, using the rinku404/bno085 library (same setup as Victor's working test).
+// Runs in its own task; any task can read the latest values with imu_get().
+//
+// Wiring (I2C mode): VCC->3V3, GND->GND, PS0+PS1->GND, ADO->GND (0x4A), CS->3V3,
+//                    SDA->21, SCL->22, INT->26, RST->32
 
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef struct {
-    float roll, pitch, yaw; // deg (yaw is gyro-only and drifts)
-    float rate[3];          // deg/s x, y, z, Kalman-smoothed and bias-corrected
-    bool still;             // board has been motionless for >= 0.5 s
-    bool valid;             // false until calibration has finished
+    float roll, pitch, yaw;  // deg, game rotation vector (accel + gyro, no magnetometer; yaw drifts)
+    float gyro[3];           // deg/s, calibrated
+    uint8_t accuracy;        // orientation accuracy: 0 unreliable .. 3 high
+    bool valid;              // false until the first orientation report arrives
 } imu_state_t;
 
 void imu_start(void);
-void imu_get_state(imu_state_t *out);
+void imu_get(imu_state_t *out);

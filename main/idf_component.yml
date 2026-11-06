@@ -1,0 +1,6 @@
+## IDF Component Manager Manifest File
+dependencies:
+  idf:
+    version: '>=5.5.0'
+  # BNO085 driver (same library as Victor's working IMU test). 1.2.x has bno085_quaternion_to_euler.
+  rinku404/bno085: ~1.2.0
