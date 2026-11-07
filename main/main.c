@@ -1,48 +1,57 @@
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "imu.h"
-#include "rc.h"
-#include "rc_drive.h"
-#include "motor_test.h" // not started right now, see below
-#include "arm_test.h"   // not started right now, see below
+// Picks one firmware mode and runs it. Modes are listed in modes/modes.h.
+//
+// The mode comes from main/mode_select.h, written by tools/pick_mode.py (gitignored, so
+// switching modes never shows up as a code change). CMake creates it with MODE_DRIVE if missing.
+//
+// Every mode runs on its own at power-up: no laptop or serial commands needed.
 
-// Runs on its own at power-up: no laptop or serial commands needed. If USB is plugged in,
-// idf.py monitor shows the IMU, the controller channels and the motor throttle.
+#include "esp_log.h"
+#include "modes.h"
+#if __has_include("mode_select.h")
+#include "mode_select.h"
+#else
+// Deleted after the last CMake run. Don't silently fall back: the build could then miss the
+// file when it comes back and keep running the wrong mode.
+#error "main/mode_select.h is missing. Pick a mode with tools/pick_mode.py (or run: idf.py reconfigure)"
+#endif
 
-#define PRINT_PERIOD_MS 200
-#define PRINT_CHANNELS  8       // T8L has 8 channels
+#ifndef APP_MODE
+#define APP_MODE MODE_DRIVE
+#endif
+
+#ifndef SERVO_CAL_STEP
+#define SERVO_CAL_STEP CAL_SLIDER
+#endif
+
+static const char *TAG = "MAIN";
 
 void app_main(void)
 {
-    rc_drive_start();   // ESC on GPIO18 driven from the T8L: CH5 arms, CH2 = speed (first, so it sends neutral early)
-    imu_start();        // BNO085 on I2C (SDA 21, SCL 22, INT 26, RST 32), see imu.h
-    rc_start();         // ELRS receiver on UART1 (RX 27, TX 25), see rc.h
-
-    // Kept for later, switched off for this test:
-    // arm_test_start();   // servos ID 1-6 swing +/-45 deg (UART2, TX 17, RX 16)
-    // motor_test_start(); // scripted forward / reverse / 80% test. Don't run with rc_drive_start (both use the ESC)
-
-    while (1) {
-        imu_state_t imu;
-        rc_state_t rc;
-        imu_get(&imu);
-        rc_get(&rc);
-
-        if (imu.valid) {
-            printf("R%7.1f P%7.1f Y%7.1f | ", imu.roll, imu.pitch, imu.yaw);
-        } else {
-            printf("IMU waiting           | ");
-        }
-        rc_drive_state_t drv;
-        rc_drive_get(&drv);
-        printf("ESC %4lu %s | ", (unsigned long)drv.pulse_us, drv.armed ? "ARMED" : "safe ");
-        if (rc.connected) {
-            for (int i = 0; i < PRINT_CHANNELS; i++) printf("CH%d %4u ", i + 1, rc.ch[i]);
-            printf("\n");
-        } else {
-            printf("RC no signal\n");
-        }
-        vTaskDelay(pdMS_TO_TICKS(PRINT_PERIOD_MS));
-    }
+#if APP_MODE == MODE_DRIVE
+    ESP_LOGI(TAG, "Mode: drive (IMU + controller + drive motor)");
+    mode_drive_run();
+#elif APP_MODE == MODE_TEST_IMU
+    ESP_LOGI(TAG, "Mode: test IMU");
+    test_imu_run();
+#elif APP_MODE == MODE_TEST_RC
+    ESP_LOGI(TAG, "Mode: test controller");
+    test_rc_run();
+#elif APP_MODE == MODE_TEST_LEG_SWEEP
+    ESP_LOGI(TAG, "Mode: test leg sweep (IDs 1-6, +/-45 deg)");
+    test_leg_sweep_run();
+#elif APP_MODE == MODE_TEST_MOTOR_SWEEP
+    ESP_LOGI(TAG, "Mode: test motor sweep (scripted, no controller)");
+    test_motor_sweep_run();
+#elif APP_MODE == MODE_TEST_MOTOR_RC
+    ESP_LOGI(TAG, "Mode: test motor from controller");
+    test_motor_rc_run();
+#elif APP_MODE == MODE_TOOL_SERVO_CAL
+    ESP_LOGI(TAG, "Mode: servo calibration tool, step %d", SERVO_CAL_STEP);
+    tool_servo_cal_run(SERVO_CAL_STEP);
+#elif APP_MODE == MODE_TOOL_SERVO_SET_ID
+    ESP_LOGW(TAG, "Mode: SERVO SET ID TOOL (renumbers a servo)");
+    tool_servo_set_id_run();
+#else
+#error "Unknown APP_MODE in main/mode_select.h. See main/modes/modes.h for the list."
+#endif
 }

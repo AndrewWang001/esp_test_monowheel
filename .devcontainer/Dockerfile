@@ -1,4 +1,5 @@
-ARG DOCKER_TAG=latest
+# Same ESP-IDF version everyone builds with locally (the BNO085 library needs >= 5.5)
+ARG DOCKER_TAG=v5.5.3
 FROM espressif/idf:${DOCKER_TAG}
 
 ENV LC_ALL=C.UTF-8

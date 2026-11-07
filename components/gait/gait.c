@@ -14,7 +14,7 @@
 
 typedef struct {
     float duty;                         // fraction of the cycle a foot is on the ground
-    float offset[GAIT_NUM_LEGS];        // where in the cycle each leg starts
+    float offset[NUM_LEGS];        // where in the cycle each leg starts
 } gait_params_t;
 
 static const gait_params_t GAITS[] = {
@@ -37,24 +37,24 @@ static bool foot_offset(float phase, float duty, float *dy, float *dz)
     return false;
 }
 
-arm_err_t gait_pose(gait_type_t gait, uint32_t t_ms, gait_pose_t *out)
+leg_err_t gait_pose(gait_type_t gait, uint32_t t_ms, gait_pose_t *out)
 {
     const gait_params_t *g = &GAITS[gait];
     float cycle = (float)(t_ms % PERIOD_MS) / PERIOD_MS;   // wrap first so t_ms never loses precision
 
-    for (int leg = 0; leg < GAIT_NUM_LEGS; leg++) {
+    for (int leg = 0; leg < NUM_LEGS; leg++) {
         float phase = fmodf(cycle + g->offset[leg], 1.0f);
         float dy, dz;
         out->on_ground[leg] = foot_offset(phase, g->duty, &dy, &dz);
 
-        // In each arm's own frame the foot is always out to +x: the mirror that puts the
-        // back foot at -x in the body frame cancels when going back into the arm's frame.
-        arm_point_t p = {REACH_OUT_MM, FOOT_Y_MM + dy, -HIP_HEIGHT_MM + dz};
+        // In each leg's own frame the foot is always out to +x: the mirror that puts the
+        // back foot at -x in the body frame cancels when going back into the leg's frame.
+        leg_point_t p = {REACH_OUT_MM, FOOT_Y_MM + dy, -HIP_HEIGHT_MM + dz};
         out->foot[leg] = p;
-        arm_err_t err = arm_ik(&p, true, &out->q[leg]);
-        if (err != ARM_OK) return err;
+        leg_err_t err = leg_ik(&p, true, &out->q[leg]);
+        if (err != LEG_OK) return err;
     }
-    return ARM_OK;
+    return LEG_OK;
 }
 
 uint32_t gait_period_ms(void)

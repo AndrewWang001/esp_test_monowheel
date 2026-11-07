@@ -1,14 +1,14 @@
 import math
 
-from arm import ik3
+from leg import ik3
 
 HIP_HEIGHT = 164   # mm, shoulder joints above the ground (z = 0)
 SPACING = 68       # mm between the two shoulders along y
 
-# Legs stick out sideways: front arm to +x, back arm to -x. The back arm is a mirror
-# image of the front arm (reflected across the yz plane), so the same angles give
+# Legs stick out sideways: front leg to +x, back leg to -x. The back leg is a mirror
+# image of the front leg (reflected across the yz plane), so the same angles give
 # mirrored poses. Both face +y at zero. mirror flips x between the body frame and
-# that arm's own frame.
+# that leg's own frame.
 LEGS = [
     {"name": "back",  "hip": (0, 0, HIP_HEIGHT),       "mirror": -1},
     {"name": "front", "hip": (0, SPACING, HIP_HEIGHT), "mirror": +1},
@@ -45,7 +45,7 @@ def foot_offset(phase, duty):
     return dy, dz, False
 
 def leg_targets(t, gait):
-    """For every leg at time t: the foot target in that arm's own frame, and its stance/swing state."""
+    """For every leg at time t: the foot target in that leg's own frame, and its stance/swing state."""
     g = GAITS[gait]
     out = []
     for leg in LEGS:
@@ -54,7 +54,7 @@ def leg_targets(t, gait):
         dy, dz, on_ground = foot_offset(phase, g["duty"])
         # body frame, relative to the hip: out to the side, stepping along y
         foot_body = (m * REACH_OUT, FOOT_Y + dy, -HIP_HEIGHT + dz)
-        local = (m * foot_body[0], foot_body[1], foot_body[2])   # mirror into the arm's frame
+        local = (m * foot_body[0], foot_body[1], foot_body[2])   # mirror into the leg's frame
         out.append((leg, local, on_ground))
     return out
 

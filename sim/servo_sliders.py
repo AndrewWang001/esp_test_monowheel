@@ -1,11 +1,11 @@
-"""Live sliders for the leg servos. Needs the servo_cal firmware flashed with CAL_STEP = CAL_SLIDER.
+"""Live sliders for the leg servos. Needs the firmware in "Servo calibration: slider" mode (tools/pick_mode.py).
 
 Close idf.py monitor first (it holds the port), then:
-    sim/.venv/bin/python sim/servo_sliders.py [port]
+    python sim/servo_sliders.py [port]        (pip install -r sim/requirements.txt first)
 
 One slider per connected servo, in raw servo units (0..1000 = 0..240 deg). Each label shows
 the position the servo reports back. The sliders start at the servos' current positions.
-Home sends every servo to its 0 deg position (the .zero values in main/joints.c).
+Home sends every servo to its 0 deg position (the .zero values in components/legs/legs.c).
 """
 import glob
 import sys

@@ -1,0 +1,6 @@
+# Python tools in sim/ (leg.py and gait.py need only the standard library)
+#   python -m venv sim/.venv
+#   sim\.venv\Scripts\activate        (Windows)   /   source sim/.venv/bin/activate   (Mac/Linux)
+#   pip install -r sim/requirements.txt
+matplotlib>=3.8    # leg_viz.py, servo_sliders.py
+pyserial>=3.5      # servo_sliders.py
