@@ -7,16 +7,19 @@
 #include "joints.h"
 
 #define ARM_TASK_STACK  4096
-#define ARM_TASK_PRIO   4             // below the BNO085 task
+#define ARM_TASK_PRIO   4             // below the IMU task
 #define ARM_TASK_CORE   0
 
 #define SWEEP_DEG       45.0f         // each side of zero, so 90 deg total
 #define SWEEP_MS        2000          // time for one side-to-side move
 #define HOME_MS         1500          // first move to zero after power-up
+#define SCAN_AFTER      4             // half-swings with no servo at all before scanning every ID
 
 static const char *TAG = "ARM";
 
-static const gait_leg_t LEG = LEG_BACK;   // joint_cal row holding servo IDs 1, 2, 3
+// Which servos in joint_cal (back leg IDs 1 2 3, front leg IDs 4 5 6) have answered
+static bool s_active[GAIT_NUM_LEGS][JOINTS_PER_LEG];
+static bool s_warned[GAIT_NUM_LEGS][JOINTS_PER_LEG];
 
 // Asks every possible ID once and logs who answers (~13 s). Tells apart "servos have
 // different IDs" from "no servo can hear us / answer at all" (power or wiring).
@@ -39,51 +42,61 @@ static void scan_ids(void)
     }
 }
 
-// Waits until every servo on the leg answers. Runs forever if one never shows up, so the
-// ESP can be powered before the servos and still start once they come up.
-static void wait_for_servos(void)
+// Pings every servo that hasn't answered yet and switches on the ones that do. Missing servos
+// don't hold up the others: they join the sweep whenever they show up. Returns how many are active.
+static int find_servos(void)
 {
-    int rounds = 0;
-    while (1) {
-        if (++rounds == 4) scan_ids();
-        bool all = true;
+    int active = 0;
+    for (int leg = 0; leg < GAIT_NUM_LEGS; leg++) {
         for (int j = 0; j < JOINTS_PER_LEG; j++) {
-            uint8_t got;
-            if (servo_read_id(joint_cal[LEG][j].id, &got) != ESP_OK) {
-                ESP_LOGW(TAG, "Servo ID %u (%s) not replying", joint_cal[LEG][j].id, joint_name(LEG, j));
-                all = false;
+            uint8_t id = joint_cal[leg][j].id;
+            if (!s_active[leg][j]) {
+                uint8_t got;
+                if (servo_read_id(id, &got) == ESP_OK) {
+                    servo_set_servo_mode(id);   // in case it was left in motor (spin) mode
+                    servo_set_torque(id, true);
+                    s_active[leg][j] = true;
+                    ESP_LOGI(TAG, "Servo ID %u (%s) found, zero = %d", id, joint_name(leg, j),
+                             joint_cal[leg][j].zero);
+                } else if (!s_warned[leg][j]) {
+                    ESP_LOGW(TAG, "Servo ID %u (%s) not replying, will keep checking", id, joint_name(leg, j));
+                    s_warned[leg][j] = true;
+                }
             }
+            if (s_active[leg][j]) active++;
         }
-        if (all) return;
-        vTaskDelay(pdMS_TO_TICKS(1000));
     }
+    return active;
 }
 
 static void move_all(float deg, uint16_t time_ms)
 {
-    for (int j = 0; j < JOINTS_PER_LEG; j++) {
-        servo_move(joint_cal[LEG][j].id, joint_deg_to_pos(LEG, j, deg), time_ms);
+    for (int leg = 0; leg < GAIT_NUM_LEGS; leg++) {
+        for (int j = 0; j < JOINTS_PER_LEG; j++) {
+            if (s_active[leg][j]) {
+                servo_move(joint_cal[leg][j].id, joint_deg_to_pos(leg, j, deg), time_ms);
+            }
+        }
     }
 }
 
 static void arm_task(void *arg)
 {
     ESP_ERROR_CHECK(servo_bus_init(SERVO_UART, SERVO_TX_GPIO, SERVO_RX_GPIO));
-    wait_for_servos();
 
-    for (int j = 0; j < JOINTS_PER_LEG; j++) {
-        uint8_t id = joint_cal[LEG][j].id;
-        servo_set_servo_mode(id);   // in case it was left in motor (spin) mode
-        servo_set_torque(id, true);
-        ESP_LOGI(TAG, "Servo ID %u (%s) ready, zero = %d", id, joint_name(LEG, j), joint_cal[LEG][j].zero);
+    // Wait for at least one servo, then home whatever answered
+    int rounds = 0;
+    while (find_servos() == 0) {
+        if (++rounds == SCAN_AFTER) scan_ids();
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
-
     move_all(0, HOME_MS);
     vTaskDelay(pdMS_TO_TICKS(HOME_MS + 500));
     ESP_LOGI(TAG, "Sweeping +/-%.0f deg, %d ms per side", SWEEP_DEG, SWEEP_MS);
 
     float target = SWEEP_DEG;
     while (1) {
+        find_servos();              // late servos join here (they move from wherever they are)
         move_all(target, SWEEP_MS);
         vTaskDelay(pdMS_TO_TICKS(SWEEP_MS));
         target = -target;
