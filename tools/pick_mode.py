@@ -33,7 +33,7 @@ MODES = [
     ("Test: motor sweep", "MODE_TEST_MOTOR_SWEEP", None,
      "Drive motor scripted, no controller: slow fwd, slow rev, up to 80%, stop. Clamp the motor!"),
     ("Test: motor + controller", "MODE_TEST_MOTOR_RC", None,
-     "Drive motor from the controller only. CH5 kill switch, CH2 speed (25% cap)."),
+     "Drive motors from the controller only. CH5 kill switch, CH2 speed (75% cap)."),
     ("Servo calibration: center", "MODE_TOOL_SERVO_CAL", "CAL_CENTER",
      "Servos go to mid travel (500) and hold. Fit horns in the zero pose. Links OFF."),
     ("Servo calibration: read", "MODE_TOOL_SERVO_CAL", "CAL_READ",

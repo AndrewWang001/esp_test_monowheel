@@ -11,7 +11,7 @@
 #define KILL_SWITCH_CH    4       // CH5 (index 4): kill switch
 #define KILL_SWITCH_RUN   1500    // CH5 above this = RUN (motor allowed), below = KILL
 
-#define DRIVE_LIMIT_PCT   25      // cap at 25% of full throttle while testing. Raise later.
+#define DRIVE_LIMIT_PCT   50      // cap at 75% of full throttle (full stick = 1125 / 1875 us)
 #define STICK_DEADBAND    30      // +/- around RC_MID that counts as centred (stick jitter)
 
 #define LOOP_MS           40      // 25 Hz. Keep >= 2 ESC PWM periods (40 ms), see esc_write_us()
