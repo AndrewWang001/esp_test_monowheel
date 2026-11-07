@@ -3,7 +3,10 @@
 // Servo-style PWM for the Repeat Robotics AM32 bi-directional ESC: 50 Hz, pulse width sets
 // throttle. 1000 us = full reverse, 1500 us = stop, 2000 us = full forward.
 //
-// Wiring: ESC signal -> PIN_ESC (pins.h), ESC signal GND -> ESP GND (battery powers the ESC, not the ESP)
+// Two ESCs (2-wheel drive) get the exact same signal: every call drives both.
+// Wiring: ESC 1 signal -> PIN_ESC, ESC 2 signal -> PIN_ESC2 (pins.h), both signal GNDs -> ESP GND
+// (the battery powers the ESCs, not the ESP). If a wheel turns the wrong way, swap two of its
+// three motor wires.
 
 #include <stdint.h>
 

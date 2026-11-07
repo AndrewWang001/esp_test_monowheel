@@ -20,5 +20,6 @@
 #define PIN_RC_RX       27      // <- receiver TX
 #define PIN_RC_TX       25      // -> receiver RX
 
-// Drive motor ESC (Repeat AM32), servo-style PWM (components/esc)
-#define PIN_ESC         18
+// Drive motor ESCs (Repeat AM32), servo-style PWM (components/esc). Both get the same signal.
+#define PIN_ESC         18      // drive motor 1
+#define PIN_ESC2        19      // drive motor 2

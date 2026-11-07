@@ -4,15 +4,23 @@
 #include "esp_err.h"
 #include "pins.h"
 
-#define ESC_GPIO      PIN_ESC
 #define ESC_FREQ_HZ   50
 #define ESC_PERIOD_US (1000000 / ESC_FREQ_HZ)   // 20000 us
 #define ESC_BITS      LEDC_TIMER_14_BIT
 #define ESC_DUTY_MAX  (1 << 14)
 
 #define ESC_MODE      LEDC_LOW_SPEED_MODE
-#define ESC_TIMER     LEDC_TIMER_0
-#define ESC_CHANNEL   LEDC_CHANNEL_0
+#define ESC_TIMER     LEDC_TIMER_0   // shared by both channels, so the two signals stay in step
+
+// One LEDC channel per ESC, all fed the same pulse width
+static const struct {
+    int gpio;
+    ledc_channel_t channel;
+} ESCS[] = {
+    {PIN_ESC,  LEDC_CHANNEL_0},
+    {PIN_ESC2, LEDC_CHANNEL_1},
+};
+#define NUM_ESCS (sizeof(ESCS) / sizeof(ESCS[0]))
 
 static uint32_t us_to_duty(uint32_t us)
 {
@@ -30,15 +38,17 @@ void esc_init(void)
     };
     ESP_ERROR_CHECK(ledc_timer_config(&timer));
 
-    const ledc_channel_config_t ch = {
-        .gpio_num = ESC_GPIO,
-        .speed_mode = ESC_MODE,
-        .channel = ESC_CHANNEL,
-        .timer_sel = ESC_TIMER,
-        .duty = us_to_duty(ESC_US_NEUTRAL),   // ESC arms on neutral
-        .hpoint = 0,
-    };
-    ESP_ERROR_CHECK(ledc_channel_config(&ch));
+    for (int i = 0; i < NUM_ESCS; i++) {
+        const ledc_channel_config_t ch = {
+            .gpio_num = ESCS[i].gpio,
+            .speed_mode = ESC_MODE,
+            .channel = ESCS[i].channel,
+            .timer_sel = ESC_TIMER,
+            .duty = us_to_duty(ESC_US_NEUTRAL),   // ESC arms on neutral
+            .hpoint = 0,
+        };
+        ESP_ERROR_CHECK(ledc_channel_config(&ch));
+    }
 }
 
 // Note: ledc_update_duty() busy-waits (interrupts off) until the previous change has taken
@@ -52,6 +62,8 @@ void esc_write_us(uint32_t us)
     uint32_t duty = us_to_duty(us);
     if (duty == last_duty) return;
     last_duty = duty;
-    ledc_set_duty(ESC_MODE, ESC_CHANNEL, duty);
-    ledc_update_duty(ESC_MODE, ESC_CHANNEL);
+    for (int i = 0; i < NUM_ESCS; i++) {
+        ledc_set_duty(ESC_MODE, ESCS[i].channel, duty);
+        ledc_update_duty(ESC_MODE, ESCS[i].channel);
+    }
 }
