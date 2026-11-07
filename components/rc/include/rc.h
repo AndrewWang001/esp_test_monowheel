@@ -19,5 +19,15 @@ typedef struct {
     uint32_t packets;               // channel packets received since boot
 } rc_state_t;
 
+// Kill switch, shared by everything that moves (drive motors, legs)
+#define RC_KILL_SWITCH_CH   4       // CH5 (index 4)
+#define RC_KILL_SWITCH_RUN  1500    // above this = RUN (moving allowed), below = KILL
+
+// True when the radio is connected and the kill switch is in RUN
+static inline bool rc_run_allowed(const rc_state_t *rc)
+{
+    return rc->connected && rc->ch[RC_KILL_SWITCH_CH] > RC_KILL_SWITCH_RUN;
+}
+
 void rc_start(void);
 void rc_get(rc_state_t *out);

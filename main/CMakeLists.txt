@@ -9,7 +9,7 @@ idf_component_register(SRCS "main.c"
                             "modes/tool_servo_cal.c"
                             "modes/tool_servo_set_id.c"
                     INCLUDE_DIRS "." "modes"
-                    PRIV_REQUIRES imu rc esc drive servo_bus legs leg_kinematics gait pins
+                    PRIV_REQUIRES imu rc esc drive leg_control servo_bus legs leg_kinematics gait pins
                                   esp_driver_uart esp_timer)
 
 # Firmware mode file (written by tools/pick_mode.py, gitignored). It must exist before the first

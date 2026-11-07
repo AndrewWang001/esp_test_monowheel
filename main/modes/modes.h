@@ -5,7 +5,7 @@
 //
 // Each test exercises one part of the robot on its own, so it can be checked step by step.
 
-#define MODE_DRIVE              1   // normal: IMU + controller + drive motor (kill switch)
+#define MODE_DRIVE              1   // normal: IMU + controller, drive motors (CH2) + legs (CH3), kill switch CH5
 #define MODE_TEST_IMU           2   // IMU only: prints roll / pitch / yaw / gyro
 #define MODE_TEST_RC            3   // controller only: prints all channels
 #define MODE_TEST_LEG_SWEEP     4   // leg servos IDs 1-6 swing +/-45 deg around their zero
@@ -33,3 +33,4 @@ void tool_servo_set_id_run(void);
 void print_imu(void);
 void print_rc(int channels);
 void print_drive(void);
+void print_legs(void);

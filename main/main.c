@@ -28,7 +28,7 @@ static const char *TAG = "MAIN";
 void app_main(void)
 {
 #if APP_MODE == MODE_DRIVE
-    ESP_LOGI(TAG, "Mode: drive (IMU + controller + drive motor)");
+    ESP_LOGI(TAG, "Mode: drive (IMU + controller: CH2 motors, CH3 legs, CH5 kill switch)");
     mode_drive_run();
 #elif APP_MODE == MODE_TEST_IMU
     ESP_LOGI(TAG, "Mode: test IMU");

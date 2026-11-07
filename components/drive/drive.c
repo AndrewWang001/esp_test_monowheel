@@ -8,10 +8,9 @@
 #include "rc.h"
 
 #define THROTTLE_CH       1       // CH2 (index 1): right stick up/down, springs back to centre
-#define KILL_SWITCH_CH    4       // CH5 (index 4): kill switch
-#define KILL_SWITCH_RUN   1500    // CH5 above this = RUN (motor allowed), below = KILL
+                                  // kill switch: RC_KILL_SWITCH_CH in rc.h (CH5)
 
-#define DRIVE_LIMIT_PCT   50      // cap at 75% of full throttle (full stick = 1125 / 1875 us)
+#define DRIVE_LIMIT_PCT   50      // cap at 50% of full throttle (full stick = 1250 / 1750 us)
 #define STICK_DEADBAND    30      // +/- around RC_MID that counts as centred (stick jitter)
 
 #define LOOP_MS           40      // 25 Hz. Keep >= 2 ESC PWM periods (40 ms), see esc_write_us()
@@ -41,7 +40,7 @@ static void drive_task(void *arg)
 {
     esc_init();   // outputs neutral from the start so the ESC arms
     ESP_LOGI(TAG, "Kill switch CH%d, speed CH%d (right stick up/down), limit %d%%",
-             KILL_SWITCH_CH + 1, THROTTLE_CH + 1, DRIVE_LIMIT_PCT);
+             RC_KILL_SWITCH_CH + 1, THROTTLE_CH + 1, DRIVE_LIMIT_PCT);
 
     bool enabled = false;
     TickType_t wake = xTaskGetTickCount();
@@ -50,7 +49,7 @@ static void drive_task(void *arg)
 
         rc_state_t rc;
         rc_get(&rc);
-        bool run = rc.connected && rc.ch[KILL_SWITCH_CH] > KILL_SWITCH_RUN;
+        bool run = rc_run_allowed(&rc);
         uint32_t stick_us = rc.connected ? stick_to_us(rc.ch[THROTTLE_CH]) : ESC_US_NEUTRAL;
 
         if (!run) {

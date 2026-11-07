@@ -3,6 +3,7 @@
 #include "imu.h"
 #include "rc.h"
 #include "drive.h"
+#include "leg_control.h"
 
 void print_imu(void)
 {
@@ -32,4 +33,11 @@ void print_drive(void)
     drive_state_t d;
     drive_get(&d);
     printf("ESC %4lu %s | ", (unsigned long)d.pulse_us, d.motor_enabled ? "RUN " : "KILL");
+}
+
+void print_legs(void)
+{
+    leg_control_state_t l;
+    leg_control_get(&l);
+    printf("LEGS %+5.1f %s %d/6 | ", l.angle_deg, l.following ? "RUN " : "HOLD", l.servos);
 }
